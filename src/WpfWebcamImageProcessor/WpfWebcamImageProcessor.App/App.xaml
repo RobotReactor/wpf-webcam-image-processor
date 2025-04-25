@@ -1,9 +1,9 @@
-﻿<Application x:Class="WpfWebcamImageProcessor.App.App"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:WpfWebcamImageProcessor.App"
-             StartupUri="MainWindow.xaml">
+﻿<prism:PrismApplication x:Class="WpfWebcamImageProcessor.App.App"
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:local="clr-namespace:WpfWebcamImageProcessor.App"
+            xmlns:prism="http://prismlibrary.com/" >
     <Application.Resources>
-         
+
     </Application.Resources>
-</Application>
+</prism:PrismApplication>
