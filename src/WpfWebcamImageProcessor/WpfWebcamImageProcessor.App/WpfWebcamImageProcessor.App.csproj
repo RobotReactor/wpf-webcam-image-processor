@@ -14,4 +14,8 @@
     <PackageReference Include="Prism.DryIoc" Version="9.0.537" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="ViewModels\" />
+  </ItemGroup>
+
 </Project>
