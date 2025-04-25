@@ -8,17 +8,29 @@ using WpfWebcamImageProcessor.App.Views;
 namespace WpfWebcamImageProcessor.App
 {
     /// <summary>
-    /// Interaction logic for App.xaml
-    /// 
-    /// Addressing errors in next commit
+    /// Provides the application's entry point and sets up the Prism framework infrastructure,
+    /// including the dependency injection container (DryIoc) and initial window creation.
     /// </summary>
     public partial class App : PrismApplication
     {
+        /// <summary>
+        /// Registers types (services, views, viewmodels) with the Prism dependency injection container.
+        /// </summary>
+        /// <param name="containerRegistry">The container registry provided by Prism.</param>
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
+            // Registering MainWindow allows it to be resolved by the container and potentially used in navigation.
             containerRegistry.RegisterForNavigation<MainWindow>();
         }
 
+        /// <summary>
+        /// Creates and returns the main window (Shell) of the application.
+        /// </summary>
+        /// <returns>The main application window instance.</returns>
+        /// <remarks>
+        /// This method is called by Prism after <see cref="RegisterTypes"/> has completed.
+        /// It resolves the main window type from the container, allowing dependencies to be injected.
+        /// </remarks>
         protected override Window CreateShell()
         {
             return Container.Resolve<MainWindow>();
