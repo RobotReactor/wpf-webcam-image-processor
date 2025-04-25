@@ -4,9 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfWebcamImageProcessor.App.Views"
+        xmlns:prism="http://prismlibrary.com/"
+        prism:ViewModelLocator.AutoWireViewModel="True"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        
-    </Grid>
+        Title="{Binding Title}" Height="600" Width="900">
+<Grid>
+    <TextBlock Text="Main Window Shell Loaded!" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20"/>
+</Grid>
 </Window>
