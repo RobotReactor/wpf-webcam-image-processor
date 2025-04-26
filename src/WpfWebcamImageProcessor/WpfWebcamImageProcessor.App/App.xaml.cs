@@ -3,6 +3,7 @@ using Prism.Ioc;
 using System.Configuration;
 using System.Data;
 using System.Windows;
+using WpfWebcamImageProcessor.App.Services;
 using WpfWebcamImageProcessor.App.Views;
 
 namespace WpfWebcamImageProcessor.App
@@ -21,6 +22,7 @@ namespace WpfWebcamImageProcessor.App
         {
             // Registering MainWindow allows it to be resolved by the container and potentially used in navigation.
             containerRegistry.RegisterForNavigation<MainWindow>();
+            containerRegistry.RegisterSingleton<IImageProcessingService, ImageProcessingService>();
         }
 
         /// <summary>
