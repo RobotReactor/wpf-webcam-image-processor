@@ -1,31 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Drawing;
-using System.Windows.Media.Imaging;
+﻿using System.Drawing;
 
 namespace WpfWebcamImageProcessor.App.Services
 {
-    /// <summary>
-    /// Defines the contract for services that perform image processing operations,
-    /// such as color conversion and analysis.
-    /// </summary>
     public interface IImageProcessingService
     {
         /// <summary>
         /// Converts a given source image to an 8-bit grayscale representation.
         /// </summary>
-        /// <param name="sourceImage">The original <see cref="BitmapSource"/> image to convert.</param>
-        /// <returns>A new <see cref="BitmapSource"/> image containing the grayscale version.</returns>
-        BitmapSource? ConvertToGrayscale(BitmapSource sourceImage); // Updated parameter and return type
+        /// <param name="sourceImage">The original <see cref="Bitmap"/> image to convert.</param> // Updated type
+        /// <returns>A new <see cref="Bitmap"/> image containing the grayscale version, or null on error.</returns> // Updated type
+        Bitmap? ConvertToGrayscale(Bitmap sourceImage); // Changed parameter and return type to Bitmap?
 
         /// <summary>
-        /// Generates a histogram representing the distribution of pixel intensity values...
+        /// Generates a histogram ... in a grayscale image.
         /// </summary>
-        /// <param name="grayscaleImage">The 8-bit grayscale <see cref="BitmapSource"/> image to analyze.</param>
-        /// <returns>An array of integers representing the histogram... Returns null if input is invalid.</returns>
-        int[]? GenerateHistogram(BitmapSource grayscaleImage); // Updated parameter type
+        /// <param name="grayscaleImage">The 8-bit grayscale <see cref="Bitmap"/> image to analyze.</param> // Updated type
+        /// <returns>An array of integers ... Returns null if input is invalid.</returns>
+        int[]? GenerateHistogram(Bitmap grayscaleImage); // Changed parameter type
     }
 }
