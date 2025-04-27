@@ -16,41 +16,35 @@ namespace WpfWebcamImageProcessor.App.Converters
     {
         public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            // Check if the input value is a Bitmap
             if (value is not Bitmap bmp)
             {
-                return null; // Or return DependencyProperty.UnsetValue;
+                return null;
             }
 
             try
             {
-                // Use a MemoryStream to temporarily hold the bitmap data
                 using (MemoryStream memory = new MemoryStream())
                 {
-                    // Save the bitmap to the stream in a format WPF understands (e.g., Bmp or Png)
-                    // Using Bmp might be slightly faster but doesn't support transparency well. Png is generally good.
                     bmp.Save(memory, ImageFormat.Png);
-                    memory.Position = 0; // Rewind the stream to the beginning
+                    memory.Position = 0; 
 
-                    // Create a BitmapImage from the MemoryStream
                     BitmapImage bitmapImage = new BitmapImage();
                     bitmapImage.BeginInit();
                     bitmapImage.StreamSource = memory;
-                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad; // Load fully into memory
+                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
                     bitmapImage.EndInit();
-                    bitmapImage.Freeze(); // Optional: Freeze for performance benefits if not changing further
+                    bitmapImage.Freeze();
 
-                    return bitmapImage; // Return the WPF-compatible BitmapSource
+                    return bitmapImage;
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error converting Bitmap to BitmapSource: {ex.Message}");
-                return null; // Or return DependencyProperty.UnsetValue;
+                return null; 
             }
         }
 
-        // ConvertBack is usually not needed for one-way bindings to Image Source
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
