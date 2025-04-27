@@ -11,34 +11,39 @@
         mc:Ignorable="d"
         Title="{Binding Title}" Height="600" Width="900">
 
-<Window.Resources>
-    <conv:BitmapToBitmapSourceConverter x:Key="BitmapConverter"/>
-</Window.Resources>
+    <Window.Resources>
+        <conv:BitmapToBitmapSourceConverter x:Key="BitmapConverter"/>
+    </Window.Resources>
 
-<Grid Margin="10">
-    <Grid.RowDefinitions>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="*"/>
-        <RowDefinition Height="Auto"/>
-    </Grid.RowDefinitions>
-    <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="*"/>
-    </Grid.ColumnDefinitions>
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-    <Button Grid.Row="0" Grid.ColumnSpan="2" Content="Capture and Process Image"
+        <Button Grid.Row="0" Grid.ColumnSpan="2" Content="Capture and Process Image"
                 HorizontalAlignment="Center" VerticalAlignment="Center" Padding="10,5" Margin="0,0,0,10"
                 Command="{Binding ProcessImageCommand}" />
-    <Border Grid.Row="1" Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="5">
-        <Image x:Name="OriginalImage" Stretch="Uniform"
+
+        <Border Grid.Row="1" Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="5">
+            <Image x:Name="OriginalImage" Stretch="Uniform"
                    Source="{Binding OriginalBitmap, Converter={StaticResource BitmapConverter}}"/>
-    </Border>
-    <Border Grid.Row="1" Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Margin="5">
-        <Image x:Name="GrayscaleImage" Stretch="Uniform"
+        </Border>
+        <Border Grid.Row="1" Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Margin="5">
+            <Image x:Name="GrayscaleImage" Stretch="Uniform"
                    Source="{Binding GrayscaleBitmap, Converter={StaticResource BitmapConverter}}"/>
-    </Border>
+        </Border>
 
-    <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="Histogram Area Placeholder" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,0" Foreground="Gray" FontStyle="Italic">
+             <Run Text="(Histogram display unavailable due to technical issues"/>
+             <Run Text="- Data Generated: "/>
+             <Run Text="{Binding IsHistogramGenerated}"/><Run Text=")"/>
+        </TextBlock>
 
-</Grid>
+    </Grid>
 </Window>

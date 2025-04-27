@@ -11,145 +11,106 @@ namespace WpfWebcamImageProcessor.App.ViewModels
 {
     public class MainWindowViewModel : BindableBase, IDisposable
     {
+        // --- Services ---
         private readonly IImageProcessingService _imageProcessingService;
         private readonly ICameraService _cameraService;
-        private bool _isBusy = false; 
+        private bool _isBusy = false;
         private bool _isDisposed = false;
 
+        // --- Properties ---
         private string _title = "Webcam Image Processor";
-        public string Title
-        {
-            get { return _title; }
-            set { SetProperty(ref _title, value); }
-        }
+        public string Title { get => _title; set => SetProperty(ref _title, value); }
 
         private Bitmap? _originalBitmap;
-        public Bitmap? OriginalBitmap
-        {
-            get { return _originalBitmap; }
-            private set { SetProperty(ref _originalBitmap, value); }
-        }
+        public Bitmap? OriginalBitmap { get => _originalBitmap; private set => SetProperty(ref _originalBitmap, value); }
 
         private Bitmap? _grayscaleBitmap;
-        public Bitmap? GrayscaleBitmap
+        public Bitmap? GrayscaleBitmap { get => _grayscaleBitmap; private set => SetProperty(ref _grayscaleBitmap, value); }
+
+
+        private bool _isHistogramGenerated = false;
+        public bool IsHistogramGenerated
         {
-            get { return _grayscaleBitmap; }
-            private set { SetProperty(ref _grayscaleBitmap, value); }
+            get => _isHistogramGenerated;
+            set => SetProperty(ref _isHistogramGenerated, value);
         }
 
-        private int[]? _histogramData;
-        public int[]? HistogramData
-        {
-            get { return _histogramData; }
-            private set { SetProperty(ref _histogramData, value); }
-        }
+        public bool IsBusy { get => _isBusy; private set { if (SetProperty(ref _isBusy, value)) { ProcessImageCommand.RaiseCanExecuteChanged(); } } }
 
         public DelegateCommand ProcessImageCommand { get; private set; }
-
         public MainWindowViewModel(IImageProcessingService imageProcessingService, ICameraService cameraService)
         {
             _imageProcessingService = imageProcessingService ?? throw new ArgumentNullException(nameof(imageProcessingService));
-            _cameraService = cameraService ?? throw new ArgumentNullException(nameof(cameraService)); 
+            _cameraService = cameraService ?? throw new ArgumentNullException(nameof(cameraService));
 
-            ProcessImageCommand = new DelegateCommand(async () => await ExecuteProcessImageAsync(), CanExecuteProcessImage)
-                                    .ObservesProperty(() => IsBusy); 
+            ProcessImageCommand = new DelegateCommand(async () => await ExecuteProcessImageAsync(), CanExecuteProcessImage);
         }
 
-        private bool CanExecuteProcessImage()
-        {
-            return !_isBusy; 
-        }
+        private bool CanExecuteProcessImage() => !IsBusy;
 
-        public bool IsBusy
-        {
-            get => _isBusy;
-            set
-            {
-                if (SetProperty(ref _isBusy, value))
-                {
-                    ProcessImageCommand.RaiseCanExecuteChanged();
-                }
-            }
-        }
-
-        // Renamed to indicate async, changed return type to Task
         private async Task ExecuteProcessImageAsync()
         {
-            if (IsBusy) return; 
-
+            if (!CanExecuteProcessImage()) return;
             IsBusy = true;
             Bitmap? capturedBitmap = null;
-            Bitmap? grayBitmap = null;
+            Bitmap? grayResultBitmap = null;
+
+            OriginalBitmap?.Dispose(); OriginalBitmap = null;
+            GrayscaleBitmap?.Dispose(); GrayscaleBitmap = null;
+            IsHistogramGenerated = false;
 
             try
             {
+                // Step 1: Capture
                 Console.WriteLine("Attempting to capture image...");
                 capturedBitmap = await _cameraService.CaptureImageAsync();
-
                 if (capturedBitmap == null)
                 {
                     MessageBox.Show("Failed to capture image from camera.", "Capture Error", MessageBoxButton.OK, MessageBoxImage.Error);
-
-                    return; 
+                    return;
                 }
                 Console.WriteLine("Image captured successfully.");
+                OriginalBitmap = (Bitmap)capturedBitmap.Clone(); // Display clone
 
-                OriginalBitmap?.Dispose();
-
-                OriginalBitmap = (Bitmap)capturedBitmap.Clone();
-
+                // Step 2: Grayscale
                 Console.WriteLine("Attempting grayscale conversion...");
-                grayBitmap = _imageProcessingService.ConvertToGrayscale(capturedBitmap);
-
-                GrayscaleBitmap?.Dispose();
-                GrayscaleBitmap = grayBitmap; 
-
-                if (GrayscaleBitmap == null) 
+                grayResultBitmap = _imageProcessingService.ConvertToGrayscale(capturedBitmap);
+                GrayscaleBitmap = grayResultBitmap; // Assign result (takes ownership)
+                if (GrayscaleBitmap == null)
                 {
                     MessageBox.Show("Failed to convert image to grayscale.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return; 
+                    return;
                 }
                 Console.WriteLine("Grayscale conversion successful.");
 
+                // Step 3: Histogram (Calculate but don't update chart series)
                 Console.WriteLine("Attempting histogram generation...");
-                int[]? histogram = _imageProcessingService.GenerateHistogram(GrayscaleBitmap);
-                HistogramData = histogram;
-
-                if (HistogramData == null)
+                int[]? histogramData = _imageProcessingService.GenerateHistogram(GrayscaleBitmap);
+                if (histogramData != null)
                 {
-                    MessageBox.Show("Failed to generate histogram.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Console.WriteLine("Histogram generation successful (display disabled).");
+                    IsHistogramGenerated = true; // Set flag
                 }
                 else
                 {
-                    Console.WriteLine("Histogram generation successful.");
-
+                    MessageBox.Show("Failed to generate histogram.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
-
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-
+                MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 OriginalBitmap?.Dispose(); OriginalBitmap = null;
                 GrayscaleBitmap?.Dispose(); GrayscaleBitmap = null;
-
-                HistogramData = null;
+                IsHistogramGenerated = false;
             }
             finally
             {
                 capturedBitmap?.Dispose();
-
-                IsBusy = false; 
+                IsBusy = false;
             }
         }
 
-        // --- Cleanup ---
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
+        public void Dispose() { Dispose(true); GC.SuppressFinalize(this); }
         protected virtual void Dispose(bool disposing)
         {
             if (!_isDisposed)
