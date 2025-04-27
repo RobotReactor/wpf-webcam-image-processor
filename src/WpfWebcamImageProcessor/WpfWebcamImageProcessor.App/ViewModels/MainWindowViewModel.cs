@@ -3,25 +3,23 @@ using Prism.Mvvm;
 using System;
 using System.Drawing;
 using System.Threading.Tasks;
-using System.Windows;
+using System.Windows; 
 using WpfWebcamImageProcessor.App.Services;
-
-using OxyPlot;
-using OxyPlot.Series;
-using OxyPlot.Axes;
+using WpfWebcamImageProcessor.App.Models;
 
 namespace WpfWebcamImageProcessor.App.ViewModels
 {
     public class MainWindowViewModel : BindableBase, IDisposable
     {
-        // --- Services ---
-        private readonly IImageProcessingService _imageProcessingService;
-        private readonly ICameraService _cameraService;
+
+        private readonly IImageProcessingWorkflowService _workflowService;
+
+        public HistogramViewModel ChartViewModel { get; private set; }
+
         private bool _isBusy = false;
         private bool _isDisposed = false;
 
-        // --- Properties ---
-        private string _title = "Webcam Image Processor (OxyPlot)"; // Updated title slightly
+        private string _title = "Webcam Image Processor (Refactored)";
         public string Title { get => _title; set => SetProperty(ref _title, value); }
 
         private Bitmap? _originalBitmap;
@@ -30,55 +28,23 @@ namespace WpfWebcamImageProcessor.App.ViewModels
         private Bitmap? _grayscaleBitmap;
         public Bitmap? GrayscaleBitmap { get => _grayscaleBitmap; private set => SetProperty(ref _grayscaleBitmap, value); }
 
-        // Flag to indicate if histogram data was successfully generated
         private bool _isHistogramGenerated = false;
-        public bool IsHistogramGenerated { get => _isHistogramGenerated; set => SetProperty(ref _isHistogramGenerated, value); } // Public setter
-
-        // OxyPlot Model Property
-        private PlotModel _histogramPlotModel;
-        public PlotModel HistogramPlotModel
-        {
-            get => _histogramPlotModel;
-            private set => SetProperty(ref _histogramPlotModel, value); // Use SetProperty for notifications
-        }
+        public bool IsHistogramGenerated { get => _isHistogramGenerated; private set => SetProperty(ref _isHistogramGenerated, value); } // Make setter private again
 
         public bool IsBusy { get => _isBusy; private set { if (SetProperty(ref _isBusy, value)) { ProcessImageCommand.RaiseCanExecuteChanged(); } } }
 
-        // --- Commands ---
         public DelegateCommand ProcessImageCommand { get; private set; }
 
-        // Constructor
-        public MainWindowViewModel(IImageProcessingService imageProcessingService, ICameraService cameraService)
+        public MainWindowViewModel(IImageProcessingWorkflowService workflowService)
         {
-            _imageProcessingService = imageProcessingService ?? throw new ArgumentNullException(nameof(imageProcessingService));
-            _cameraService = cameraService ?? throw new ArgumentNullException(nameof(cameraService));
+            _workflowService = workflowService ?? throw new ArgumentNullException(nameof(workflowService));
 
-            var tempPlotModel = new PlotModel { Title = "Grayscale Histogram" };
-
-            tempPlotModel.Axes.Add(new LinearAxis
-            {
-                Position = AxisPosition.Bottom,
-                Title = "Intensity",
-                Minimum = -0.5,
-                Maximum = 255.5,
-                MajorGridlineStyle = LineStyle.Dot,
-                MinorGridlineStyle = LineStyle.None
-            });
-            tempPlotModel.Axes.Add(new LinearAxis
-            {
-                Position = AxisPosition.Left,
-                Title = "Count",
-                Minimum = 0,
-                MajorGridlineStyle = LineStyle.Dot,
-                MinorGridlineStyle = LineStyle.None,
-                MaximumPadding = 0.05 
-
-            });
-            HistogramPlotModel = tempPlotModel;
+            ChartViewModel = new HistogramViewModel(); 
 
             ProcessImageCommand = new DelegateCommand(async () => await ExecuteProcessImageAsync(), CanExecuteProcessImage);
         }
 
+        // --- Command Methods ---
         private bool CanExecuteProcessImage() => !IsBusy;
 
         private async Task ExecuteProcessImageAsync()
@@ -86,109 +52,66 @@ namespace WpfWebcamImageProcessor.App.ViewModels
             if (!CanExecuteProcessImage()) return;
 
             IsBusy = true;
-            Bitmap? capturedBitmap = null;
-            Bitmap? grayResultBitmap = null;
 
-            OriginalBitmap?.Dispose(); OriginalBitmap = null;
-            GrayscaleBitmap?.Dispose(); GrayscaleBitmap = null;
-            IsHistogramGenerated = false; 
-            HistogramPlotModel.Series.Clear(); 
-            HistogramPlotModel.InvalidatePlot(true);
 
+            OriginalBitmap?.Dispose();
+            GrayscaleBitmap?.Dispose();
+            OriginalBitmap = null;
+            GrayscaleBitmap = null;
+            IsHistogramGenerated = false;
+            ChartViewModel.ClearHistogram();
+
+
+            ImageProcessingResult? processingResult = null;
             try
             {
-                // Step 1: Capture Image
-                Console.WriteLine("Attempting to capture image...");
-                capturedBitmap = await _cameraService.CaptureImageAsync();
-                if (capturedBitmap == null)
+                processingResult = await _workflowService.ExecuteProcessingAsync();
+
+                if (processingResult.Success)
                 {
-                    MessageBox.Show("Failed to capture image from camera.", "Capture Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    OriginalBitmap = processingResult.OriginalBitmap; 
+                    GrayscaleBitmap = processingResult.GrayscaleBitmap; 
+                    ChartViewModel.UpdateHistogram(processingResult.HistogramData);
+                    IsHistogramGenerated = processingResult.HistogramData != null;
+                    Console.WriteLine("ViewModel: Processing successful."); 
                 }
                 else
                 {
-                    Console.WriteLine("Image captured successfully.");
-                    OriginalBitmap = (Bitmap)capturedBitmap.Clone();
-                }
+                    Console.WriteLine($"ViewModel: Processing failed - {processingResult.ErrorMessage}"); 
+                    MessageBox.Show(processingResult.ErrorMessage ?? "Image processing failed.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Warning);
 
-                // Step 2: Convert to Grayscale
-                if (capturedBitmap != null)
-                {
-                    Console.WriteLine("Attempting grayscale conversion...");
-                    grayResultBitmap = _imageProcessingService.ConvertToGrayscale(capturedBitmap);
-                    if (grayResultBitmap != null)
-                    {
-                        Console.WriteLine("Grayscale conversion successful.");
-                        GrayscaleBitmap = grayResultBitmap; 
-                    }
-                    else
-                    {
-                        MessageBox.Show("Failed to convert image to grayscale.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    }
-                }
-
-                // Step 3: Generate and Display Histogram 
-                if (GrayscaleBitmap != null)
-                {
-                    Console.WriteLine("Attempting histogram generation...");
-                    int[]? histogramData = _imageProcessingService.GenerateHistogram(GrayscaleBitmap);
-                    if (histogramData != null)
-                    {
-                        Console.WriteLine("Histogram generation successful.");
-                        IsHistogramGenerated = true;
-
-                        var rectBarSeries = new RectangleBarSeries
-                        {
-                            Title = "Count", 
-                            StrokeThickness = 1, 
-                            FillColor = OxyColors.SteelBlue 
-                        };
-
-                        for (int i = 0; i < histogramData.Length; i++)
-                        {
-                            double x0 = i - 0.5; 
-                            double x1 = i + 0.5; 
-                            double y0 = 0;       
-                            double y1 = histogramData[i]; 
-
-                            rectBarSeries.Items.Add(new RectangleBarItem(x0, y0, x1, y1));
-                        }
-
-                        HistogramPlotModel.Series.Clear(); 
-                        HistogramPlotModel.Series.Add(rectBarSeries); 
-                        HistogramPlotModel.InvalidatePlot(true); 
-                    }
-                    else
-                    {
-                        MessageBox.Show("Failed to generate histogram.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        IsHistogramGenerated = false;
-                        HistogramPlotModel.Series.Clear();
-                        HistogramPlotModel.InvalidatePlot(true);
-                    }
-                }
-                else
-                {
+                    OriginalBitmap?.Dispose();
+                    GrayscaleBitmap?.Dispose();
+                    OriginalBitmap = null;
+                    GrayscaleBitmap = null;
                     IsHistogramGenerated = false;
-                    HistogramPlotModel.Series.Clear();
-                    HistogramPlotModel.InvalidatePlot(true);
+                    ChartViewModel.ClearHistogram();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) 
             {
+                Console.WriteLine($"ViewModel: An unexpected error occurred calling workflow: {ex.Message}"); 
                 MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                OriginalBitmap?.Dispose(); OriginalBitmap = null;
-                GrayscaleBitmap?.Dispose(); GrayscaleBitmap = null;
+
+                OriginalBitmap?.Dispose();
+                GrayscaleBitmap?.Dispose();
+                OriginalBitmap = null;
+                GrayscaleBitmap = null;
                 IsHistogramGenerated = false;
-                HistogramPlotModel.Series.Clear();
-                HistogramPlotModel.InvalidatePlot(true);
+                ChartViewModel.ClearHistogram();
             }
             finally
             {
-                capturedBitmap?.Dispose();
-                IsBusy = false;
+                IsBusy = false; 
+
+                if (processingResult != null)
+                {
+                    if (OriginalBitmap != processingResult.OriginalBitmap) processingResult.OriginalBitmap?.Dispose();
+                    if (GrayscaleBitmap != processingResult.GrayscaleBitmap) processingResult.GrayscaleBitmap?.Dispose();
+                }
             }
         }
 
-        // --- Cleanup ---
         public void Dispose()
         {
             Dispose(true);

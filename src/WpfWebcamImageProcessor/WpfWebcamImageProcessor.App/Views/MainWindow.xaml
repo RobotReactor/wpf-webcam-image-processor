@@ -41,7 +41,10 @@
                    Source="{Binding GrayscaleBitmap, Converter={StaticResource BitmapConverter}}"/>
         </Border>
 
-        <oxy:PlotView Grid.Row="2" Grid.ColumnSpan="2" Margin="5,10,5,5" MinHeight="150" Model="{Binding HistogramPlotModel}" />
-
+        <oxy:PlotView
+            Grid.Row="2" Grid.ColumnSpan="2" Margin="5,10,5,5" MinHeight="150"
+            Model="{Binding ChartViewModel.HistogramPlotModel}" 
+        />
+        
     </Grid>
 </Window>

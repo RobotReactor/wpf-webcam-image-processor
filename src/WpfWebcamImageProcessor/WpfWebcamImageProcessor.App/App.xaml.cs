@@ -20,9 +20,10 @@ namespace WpfWebcamImageProcessor.App
         /// <param name="containerRegistry">The container registry provided by Prism.</param>
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            containerRegistry.RegisterForNavigation<MainWindow>();
             containerRegistry.RegisterSingleton<IImageProcessingService, ImageProcessingService>();
             containerRegistry.RegisterSingleton<ICameraService, CameraService>();
+            containerRegistry.Register<IImageProcessingWorkflowService, ImageProcessingWorkflowService>();
+
         }
 
         /// <summary>
@@ -39,5 +40,4 @@ namespace WpfWebcamImageProcessor.App
         }
 
     }
-
 }
