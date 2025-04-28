@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Drawing;
 using System.Threading.Tasks;
+using Emgu.CV;
 using WpfWebcamImageProcessor.App.Models; 
-using WpfWebcamImageProcessor.App.Exceptions; 
+using WpfWebcamImageProcessor.App.Exceptions;
 
 namespace WpfWebcamImageProcessor.App.Services
 {
     /// <summary>
     /// Orchestrates the multi-step process of capturing an image from the camera,
-    /// converting it to grayscale, and generating its histogram data.
-    /// This service encapsulates the sequence of operations, making the calling code (ViewModel) simpler.
+    /// converting it to a grayscale Mat, and generating its histogram data using Mat objects internally.
+    /// This service encapsulates the sequence of operations, making the calling code (like a ViewModel) simpler.
     /// </summary>
     public class ImageProcessingWorkflowService : IImageProcessingWorkflowService
     {
@@ -17,40 +18,45 @@ namespace WpfWebcamImageProcessor.App.Services
         private readonly IImageProcessingService _imageProcessingService;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImageProcessingWorkflowService"/> class.
+        /// Initializes a new instance of the ImageProcessingWorkflowService class.
+        /// It requires instances of the camera and image processing services to function.
         /// </summary>
         /// <param name="cameraService">The service responsible for capturing images from the camera.</param>
         /// <param name="imageProcessingService">The service responsible for performing image manipulations.</param>
         /// <exception cref="ArgumentNullException">Thrown if either service dependency is null.</exception>
         public ImageProcessingWorkflowService(ICameraService cameraService, IImageProcessingService imageProcessingService)
         {
-            // Store injected dependencies, ensuring they are not null.
+            // Store injected dependencies, ensuring they are provided.
             _cameraService = cameraService ?? throw new ArgumentNullException(nameof(cameraService));
             _imageProcessingService = imageProcessingService ?? throw new ArgumentNullException(nameof(imageProcessingService));
         }
 
         /// <summary>
-        /// Asynchronously executes the full image capture and basic processing workflow.
-        /// Handles potential errors during capture or processing steps.
+        /// Asynchronously executes the full image capture and basic processing workflow using Mat objects.
+        /// This involves capturing, converting to grayscale, and generating a histogram.
+        /// It also handles potential errors during these steps.
         /// </summary>
         /// <returns>
         /// A Task representing the asynchronous operation. The task result is an
-        /// <see cref="ImageProcessingResult"/> object containing the outcome (success/failure),
-        /// processed images (original, grayscale), histogram data, and any error messages.
+        /// ImageProcessingResult object containing the outcome (success/failure),
+        /// processed images (original Mat, grayscale Mat), histogram data,
+        /// and any error messages if failures occurred.
         /// </returns>
         public async Task<ImageProcessingResult> ExecuteProcessingAsync()
         {
-            // Initialize the object to hold the results of this workflow.
+            // Initialize the object that will hold the results of this workflow.
             var result = new ImageProcessingResult();
-            Bitmap? capturedBitmap = null;
-            Bitmap? grayscaleBitmap = null; // Keep local reference for histogram step and disposal management
+            Bitmap? capturedBitmap = null; // Holds the initial capture from the camera service
+            Mat? originalMat = null; // Mat version of the original captured image
+            Mat? grayscaleMat = null; // Mat version of the grayscale image, used for histogram
 
             try
             {
+                // First, attempt to capture an image from the camera service.
                 Console.WriteLine("Workflow: Capturing image...");
                 capturedBitmap = await _cameraService.CaptureImageAsync();
 
-                // If camera capture fails, we cannot proceed with processing.
+                // If camera capture fails (returns null), processing cannot proceed.
                 if (capturedBitmap == null)
                 {
                     result.Success = false;
@@ -59,54 +65,58 @@ namespace WpfWebcamImageProcessor.App.Services
                     return result; // Exit the workflow early.
                 }
                 Console.WriteLine("Workflow: Capture successful.");
-                // Store a clone of the captured image in the result. The original 'capturedBitmap'
-                // will be disposed in the finally block. Cloning ensures the result holds a valid object.
-                result.OriginalBitmap = (Bitmap)capturedBitmap.Clone();
 
-                Console.WriteLine("Workflow: Converting to grayscale...");
-                // Attempt grayscale conversion. This call might throw exceptions.
-                grayscaleBitmap = _imageProcessingService.ConvertToGrayscale(capturedBitmap);
-                result.GrayscaleBitmap = grayscaleBitmap; // Assign to result (result now owns this bitmap if successful)
+                // Convert the captured Bitmap to an EmguCV Mat object for internal processing.
+                // This service takes ownership of this initial Mat object.
+                originalMat = Emgu.CV.BitmapExtension.ToMat(capturedBitmap);
+                if (originalMat.IsEmpty)
+                {
+                    // If the conversion results in an empty Mat, something is wrong.
+                    throw new ImageProcessingException("Captured bitmap resulted in an empty Mat object.");
+                }
+                // Assign the Mat to the result object. Ownership transfers to the caller upon successful completion.
+                result.OriginalMat = originalMat;
+
+                // Next, convert the original captured Bitmap (not the Mat) to a grayscale Mat.
+                // The image processing service creates and returns a new Mat object.
+                Console.WriteLine("Workflow: Converting to grayscale Mat...");
+                grayscaleMat = _imageProcessingService.ConvertToGrayscaleMat(capturedBitmap);
+                // Assign the grayscale Mat to the result. Ownership transfers to the caller upon successful completion.
+                result.GrayscaleMat = grayscaleMat;
                 Console.WriteLine("Workflow: Grayscale conversion successful.");
 
-                // Proceed only if grayscale conversion was successful.
-                Console.WriteLine("Workflow: Generating histogram...");
-                // Attempt histogram generation. This call might throw exceptions.
-                // GenerateHistogram should now throw on failure rather than returning null for processing errors.
-                result.HistogramData = _imageProcessingService.GenerateHistogram(grayscaleBitmap);
+                // Finally, generate the histogram directly from the grayscale Mat object.
+                // This might throw an exception if the grayscale Mat is invalid or processing fails.
+                Console.WriteLine("Workflow: Generating histogram from grayscale Mat...");
+                result.HistogramData = _imageProcessingService.GenerateHistogram(grayscaleMat);
                 Console.WriteLine("Workflow: Histogram generation successful.");
 
-                // If all steps completed without throwing exceptions, mark as successful.
+                // If execution reaches this point without any exceptions being thrown,
+                // consider the overall workflow successful.
                 result.Success = true;
-
             }
-            // Catch specific exceptions originating from the image processing service.
+            // Catch specific exceptions that might be thrown by the underlying services.
             catch (ArgumentNullException argEx)
             {
-                Console.WriteLine($"Workflow Error: Null argument provided to processing service - {argEx.ParamName}: {argEx.Message}");
+                Console.WriteLine($"Workflow Error: Null argument - {argEx.ParamName}: {argEx.Message}");
                 result.Success = false;
                 result.ErrorMessage = $"Processing failed due to invalid input: {argEx.Message}";
             }
             catch (ArgumentOutOfRangeException argRangeEx)
             {
-                Console.WriteLine($"Workflow Error: Invalid argument value provided to processing service - {argRangeEx.ParamName}: {argRangeEx.Message}");
+                Console.WriteLine($"Workflow Error: Invalid argument value - {argRangeEx.ParamName}: {argRangeEx.Message}");
                 result.Success = false;
                 result.ErrorMessage = $"Processing failed due to invalid parameter: {argRangeEx.Message}";
             }
-            catch (ImageProcessingException procEx)
+            catch (ImageProcessingException procEx) // Catch custom exceptions from the processing service
             {
-                // Catch custom exceptions indicating a failure within an image processing step.
                 Console.WriteLine($"Workflow Error: Image Processing Exception - {procEx.Message}");
                 result.Success = false;
                 result.ErrorMessage = $"Processing failed: {procEx.Message}";
-                // Include inner exception details if helpful for debugging.
-                if (procEx.InnerException != null)
-                {
-                    result.ErrorMessage += $" (Details: {procEx.InnerException.Message})";
-                }
+                // Optionally include details from the original exception that caused this one.
+                if (procEx.InnerException != null) { result.ErrorMessage += $" (Details: {procEx.InnerException.Message})"; }
             }
-            // Catch any other unexpected exceptions during the workflow.
-            catch (Exception ex)
+            catch (Exception ex) // Catch any other unexpected exceptions.
             {
                 Console.WriteLine($"Workflow Error: Unexpected error - {ex.Message}");
                 result.Success = false;
@@ -114,31 +124,34 @@ namespace WpfWebcamImageProcessor.App.Services
             }
             finally
             {
-                // Always dispose the initially captured bitmap, as the result holds a clone.
+                // Ensure resources are released properly in this cleanup section.
+
+                // Always dispose the initial captured Bitmap, as it's no longer needed directly.
+                // The result object holds the Mat version or it failed.
                 capturedBitmap?.Dispose();
 
-                // If the overall workflow failed, ensure any bitmaps potentially assigned
-                // to the result object earlier in the try block are disposed to prevent leaks.
-                // The caller (ViewModel) should not receive bitmap data if Success is false.
+                // If the overall workflow failed, ensure any Mat objects created within this scope
+                // OR assigned to the result object are properly disposed to prevent memory leaks.
                 if (!result.Success)
                 {
-                    result.OriginalBitmap?.Dispose(); result.OriginalBitmap = null;
-                    result.GrayscaleBitmap?.Dispose(); result.GrayscaleBitmap = null;
-                    result.HistogramData = null; // Clear histogram data on failure too
+                    // Dispose the Mat objects held by the result object, as they are invalid or incomplete.
+                    result.OriginalMat?.Dispose(); result.OriginalMat = null;
+                    result.GrayscaleMat?.Dispose(); result.GrayscaleMat = null;
+                    result.HistogramData = null; // Clear histogram data as well.
 
-                    // Also dispose the local grayscale variable if it exists and wasn't the one
-                    // assigned to the (now nulled) result.GrayscaleBitmap. This handles cases
-                    // where grayscale succeeded but histogram failed.
-                    if (grayscaleBitmap != null && result.GrayscaleBitmap != grayscaleBitmap)
-                    {
-                        grayscaleBitmap.Dispose();
-                    }
+                    // Also ensure the local Mat variables are disposed if they hold references
+                    // that weren't successfully transferred to the result object (important if errors occurred mid-process).
+                    if (originalMat != null && result.OriginalMat != originalMat) originalMat.Dispose();
+                    if (grayscaleMat != null && result.GrayscaleMat != grayscaleMat) grayscaleMat.Dispose();
                 }
-                // If successful, the ownership of OriginalBitmap (clone) and GrayscaleBitmap
-                // is effectively transferred to the caller via the result object.
+                else
+                {
+                    // grayscaleMat is assigned directly to result.GrayscaleMat, so no extra check needed here on success.
+                    if (originalMat != null && result.OriginalMat != originalMat) originalMat.Dispose();
+                }
             }
 
-            // Return the result object containing status, data, and any error message.
+            // Return the result object containing the outcome, data, and any error message.
             return result;
         }
     }

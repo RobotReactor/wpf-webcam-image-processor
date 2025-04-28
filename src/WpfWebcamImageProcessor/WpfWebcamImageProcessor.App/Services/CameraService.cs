@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
-using Emgu.CV; 
+using Emgu.CV;
+using Emgu.CV.CvEnum;
 using System.Runtime.Versioning; 
 
 namespace WpfWebcamImageProcessor.App.Services
@@ -11,9 +12,6 @@ namespace WpfWebcamImageProcessor.App.Services
     /// Provides camera interaction services using the EmguCV library
     /// to capture images from connected webcam devices.
     /// </summary>
-    // This attribute indicates the service relies on Windows-specific APIs,
-    // likely due to EmguCV's underlying camera access mechanisms on Windows.
-    [SupportedOSPlatform("windows")]
     public class CameraService : ICameraService
     {
         // Specifies the index for the default camera. Index 0 usually represents
@@ -47,7 +45,6 @@ namespace WpfWebcamImageProcessor.App.Services
                     if (!capture.IsOpened)
                     {
                         // Log an error if the camera could not be accessed.
-                        // TODO: Replace Console.WriteLine with a proper logging mechanism.
                         Console.WriteLine($"Error: Unable to open camera with index {DefaultCameraIndex}");
                         return null; // Indicate failure by returning null.
                     }
@@ -60,12 +57,11 @@ namespace WpfWebcamImageProcessor.App.Services
                         if (!capture.Read(frame) || frame.IsEmpty)
                         {
                             // Log an error if reading fails or the frame is empty.
-                            // TODO: Replace Console.WriteLine with a proper logging mechanism.
                             Console.WriteLine("Error: Failed to read frame from camera.");
                             return null; // Indicate failure by returning null.
                         }
 
-                        // Convert the captured frame (Mat) to a System.Drawing.Bitmap.
+                        // Convert the captured frame / Mat to a System.Drawing.Bitmap.
                         // Requires the Emgu.CV.Bitmap package.
                         return frame.ToBitmap();
                     }
@@ -73,13 +69,12 @@ namespace WpfWebcamImageProcessor.App.Services
                 catch (Exception ex) // Catch unexpected errors during capture.
                 {
                     // Log any exceptions encountered.
-                    // TODO: Replace Console.WriteLine with a proper logging mechanism.
                     Console.WriteLine($"Error capturing image: {ex.Message}");
                     return null; // Indicate failure by returning null.
                 }
                 finally
                 {
-                    // Crucial: Ensure the VideoCapture object is released, freeing the camera resource,
+                    // Ensure the VideoCapture object is released, freeing the camera resource,
                     // regardless of whether the capture was successful or an error occurred.
                     capture?.Dispose();
                 }

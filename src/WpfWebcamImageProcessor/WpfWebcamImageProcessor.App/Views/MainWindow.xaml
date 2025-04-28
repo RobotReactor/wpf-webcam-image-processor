@@ -13,7 +13,7 @@
         Title="{Binding Title}" Height="700" Width="1305" ResizeMode="NoResize">
 
     <Window.Resources>
-        <conv:BitmapToBitmapSourceConverter x:Key="BitmapConverter"/>
+        <conv:MatToBitmapSourceConverter x:Key="MatConverter"/>
     </Window.Resources>
 
     <Grid Margin="10">
@@ -33,7 +33,7 @@
 
         <Border Grid.Row="1" Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="5">
             <Image x:Name="ProcessedImageDisplay" Stretch="Uniform"
-                   Source="{Binding DisplayBitmap, Converter={StaticResource BitmapConverter}}"/>
+                    Source="{Binding DisplayMat, Converter={StaticResource MatConverter}}"/>
         </Border>
 
         <oxy:PlotView Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" Margin="5" MinWidth="300"
@@ -68,11 +68,11 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Text="Color Image" HorizontalAlignment="Left" FontSize="10" Margin="10,0,0,0"/>
-                <TextBlock Grid.Column="2" Text="Grayscale" HorizontalAlignment="Left" FontSize="10" Margin="107,0,0,0" Width="52" Grid.ColumnSpan="3"/>
+                <TextBlock Grid.Column="2" Text="Grayscale" HorizontalAlignment="Left" FontSize="10" Margin="111,0,0,0" Width="58" Grid.ColumnSpan="3"/>
                 <TextBlock Grid.Column="4" Text="Blur" HorizontalAlignment="Left" FontSize="10" Margin="142,0,0,0" Height="13" VerticalAlignment="Center" Grid.ColumnSpan="3"/>
                 <TextBlock Grid.Column="6" Text="Edges" HorizontalAlignment="Left" FontSize="10" Grid.ColumnSpan="3" Margin="159,0,0,0"/>
                 <TextBlock Grid.Column="10" Text="Erode/Dilate" HorizontalAlignment="Left" FontSize="10" Margin="10,0,0,0"/>
-                <TextBlock Grid.Column="12" Text="Contours" FontSize="10" Margin="29,0,-11,0"/>
+                <TextBlock Grid.Column="12" Text="Contours" FontSize="10" Margin="30,0,0,0"/>
             </Grid>
         </Grid>
 
