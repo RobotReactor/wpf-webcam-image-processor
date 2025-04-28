@@ -10,7 +10,7 @@
         xmlns:oxy="http://oxyplot.org/wpf"
         prism:ViewModelLocator.AutoWireViewModel="True"
         mc:Ignorable="d"
-        Title="{Binding Title}" Height="700" Width="900">
+        Title="{Binding Title}" Height="700" Width="1305" ResizeMode="NoResize">
 
     <Window.Resources>
         <conv:BitmapToBitmapSourceConverter x:Key="BitmapConverter"/>
@@ -27,8 +27,8 @@
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
 
-        <Button Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Content="Capture and Process Image"
-                HorizontalAlignment="Center" VerticalAlignment="Center" Padding="10,5" Margin="0,0,0,10"
+        <Button Grid.Row="0" Content="Capture and Process Image"
+                HorizontalAlignment="Center" VerticalAlignment="Top" Padding="10,5"
                 Command="{Binding ProcessImageCommand}" />
 
         <Border Grid.Row="1" Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="5">
@@ -36,7 +36,8 @@
                    Source="{Binding DisplayBitmap, Converter={StaticResource BitmapConverter}}"/>
         </Border>
 
-        <oxy:PlotView Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" Margin="5" MinWidth="250" Model="{Binding ChartViewModel.HistogramPlotModel}" />
+        <oxy:PlotView Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" Margin="5" MinWidth="300"
+                      Model="{Binding HistogramService.HistogramPlotModel}" />
 
         <Grid Grid.Row="2" Grid.Column="0" Margin="10,15,10,5">
             <Grid.RowDefinitions>
@@ -45,11 +46,10 @@
             </Grid.RowDefinitions>
 
             <Slider x:Name="FilterSlider" Grid.Row="0" VerticalAlignment="Center"
-                    Minimum="0"
-                    Maximum="4" TickFrequency="1"
-                    IsSnapToTickEnabled="True"
-                    TickPlacement="BottomRight"
-                    Value="{Binding SelectedFilterIndex, Mode=TwoWay}" />
+                    Minimum="0" Maximum="5" TickFrequency="1"
+                    IsSnapToTickEnabled="True" TickPlacement="BottomRight"
+                    Value="{Binding SelectedFilterIndex, Mode=TwoWay}" Margin="26,0,21,0" />
+
             <Grid Grid.Row="1" Margin="0,0,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="1*"/>
@@ -62,14 +62,17 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="2*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="1*"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="1" Text="Grayscale" HorizontalAlignment="Center" FontSize="10"/>
-                <TextBlock Grid.Column="3" Text="Blur" HorizontalAlignment="Center" FontSize="10"/>
-                <TextBlock Grid.Column="5" Text="Erode/Dilate" HorizontalAlignment="Center" FontSize="10"/>
-                <TextBlock Grid.Column="7" Text="Edges" HorizontalAlignment="Center" FontSize="10"/>
-                <TextBlock Grid.Column="9" Text="Contours" HorizontalAlignment="Center" FontSize="10"/>
+                <TextBlock Grid.Column="0" Text="Color Image" HorizontalAlignment="Left" FontSize="10" Margin="10,0,0,0"/>
+                <TextBlock Grid.Column="2" Text="Grayscale" HorizontalAlignment="Left" FontSize="10" Margin="107,0,0,0" Width="52" Grid.ColumnSpan="3"/>
+                <TextBlock Grid.Column="4" Text="Blur" HorizontalAlignment="Left" FontSize="10" Margin="142,0,0,0" Height="13" VerticalAlignment="Center" Grid.ColumnSpan="3"/>
+                <TextBlock Grid.Column="6" Text="Edges" HorizontalAlignment="Left" FontSize="10" Grid.ColumnSpan="3" Margin="159,0,0,0"/>
+                <TextBlock Grid.Column="10" Text="Erode/Dilate" HorizontalAlignment="Left" FontSize="10" Margin="10,0,0,0"/>
+                <TextBlock Grid.Column="12" Text="Contours" FontSize="10" Margin="29,0,-11,0"/>
             </Grid>
         </Grid>
 

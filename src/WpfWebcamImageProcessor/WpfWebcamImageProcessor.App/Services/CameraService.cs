@@ -3,68 +3,84 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
 using Emgu.CV; 
-using Emgu.CV.CvEnum; 
-using System.Runtime.Versioning;
+using System.Runtime.Versioning; 
 
 namespace WpfWebcamImageProcessor.App.Services
 {
     /// <summary>
-    /// Implements the camera service using Emgu CV to capture images from a webcam.
+    /// Provides camera interaction services using the EmguCV library
+    /// to capture images from connected webcam devices.
     /// </summary>
+    // This attribute indicates the service relies on Windows-specific APIs,
+    // likely due to EmguCV's underlying camera access mechanisms on Windows.
     [SupportedOSPlatform("windows")]
     public class CameraService : ICameraService
     {
-        // Using camera index 0 typically refers to the default system webcam.
+        // Specifies the index for the default camera. Index 0 usually represents
+        // the built-in or first detected webcam by the operating system.
         private const int DefaultCameraIndex = 0;
 
         /// <summary>
         /// Asynchronously captures a single still image frame from the default camera device.
-        /// Creates and disposes the VideoCapture object for each capture in this simple implementation.
+        /// This implementation creates and disposes the VideoCapture object for each capture,
+        /// which is simple but less efficient for continuous capture scenarios.
         /// </summary>
         /// <returns>
-        /// A Task representing the asynchronous operation, containing the captured
-        /// image as a <see cref="Bitmap"/> upon successful completion.
-        /// Returns null if capture fails or no camera is available.
+        /// A Task representing the asynchronous operation. The task result contains the captured
+        /// image as a <see cref="Bitmap"/> if successful. Returns null if the camera
+        /// cannot be opened or if reading a frame fails. Returning null is chosen here
+        /// as camera unavailability might be a common, non-exceptional scenario.
         /// </returns>
         public async Task<Bitmap?> CaptureImageAsync()
         {
-            // Run the blocking capture logic on a background thread
+            // Offload the potentially blocking camera interaction to a background thread
+            // using Task.Run to keep the UI thread responsive.
             return await Task.Run(() =>
             {
                 VideoCapture? capture = null;
                 try
                 {
-                    // Create a VideoCapture object for the default camera
-                    // The 'using' statement ensures it gets disposed correctly
+                    // Attempt to initialize video capture using the default camera index.
                     capture = new VideoCapture(DefaultCameraIndex);
 
-                    // Check if the camera opened successfully
+                    // Verify if the camera was successfully opened.
                     if (!capture.IsOpened)
                     {
+                        // Log an error if the camera could not be accessed.
+                        // TODO: Replace Console.WriteLine with a proper logging mechanism.
                         Console.WriteLine($"Error: Unable to open camera with index {DefaultCameraIndex}");
-                        return null;
+                        return null; // Indicate failure by returning null.
                     }
 
+                    // Create a Mat object to store the captured frame.
+                    // 'using' ensures the Mat object is disposed of properly.
                     using (Mat frame = new Mat())
                     {
+                        // Attempt to read a frame from the camera into the Mat object.
                         if (!capture.Read(frame) || frame.IsEmpty)
                         {
+                            // Log an error if reading fails or the frame is empty.
+                            // TODO: Replace Console.WriteLine with a proper logging mechanism.
                             Console.WriteLine("Error: Failed to read frame from camera.");
-                            return null;
+                            return null; // Indicate failure by returning null.
                         }
 
+                        // Convert the captured frame (Mat) to a System.Drawing.Bitmap.
+                        // Requires the Emgu.CV.Bitmap package.
                         return frame.ToBitmap();
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) // Catch unexpected errors during capture.
                 {
-                    // Log any exceptions during capture
+                    // Log any exceptions encountered.
+                    // TODO: Replace Console.WriteLine with a proper logging mechanism.
                     Console.WriteLine($"Error capturing image: {ex.Message}");
-                    return null;
+                    return null; // Indicate failure by returning null.
                 }
                 finally
                 {
-                    // Ensure the capture device is released
+                    // Crucial: Ensure the VideoCapture object is released, freeing the camera resource,
+                    // regardless of whether the capture was successful or an error occurred.
                     capture?.Dispose();
                 }
             });
@@ -72,16 +88,17 @@ namespace WpfWebcamImageProcessor.App.Services
 
         /// <summary>
         /// Gets a list of available video capture device names or identifiers.
-        /// NOTE: Basic implementation - EmguCV doesn't have a simple cross-platform
-        /// way to enumerate friendly names. This just returns the default index.
-        /// A real implementation might try opening index 0, 1, 2... etc.
+        /// NOTE: This is a basic placeholder implementation. EmguCV (or underlying libraries)
+        /// often lacks a straightforward, cross-platform way to get user-friendly camera names.
+        /// A more robust implementation might involve platform-specific APIs (like DirectShow or Media Foundation on Windows)
+        /// or attempting to open devices at indices 0, 1, 2, etc., to check for availability.
         /// </summary>
-        /// <returns>A list containing just the default camera index as a string.</returns>
+        /// <returns>A Task containing a list with just a placeholder for the default camera.</returns>
         public Task<IEnumerable<string>> GetAvailableCamerasAsync()
         {
-            // Placeholder implementation
+            // Provides a minimal list, sufficient for scenarios using only the default camera.
             List<string> cameras = new List<string> { $"Default Camera ({DefaultCameraIndex})" };
-            // Wrap in a completed task to match the async signature
+            // Return the list wrapped in a completed Task to match the async interface method signature.
             return Task.FromResult<IEnumerable<string>>(cameras);
         }
     }

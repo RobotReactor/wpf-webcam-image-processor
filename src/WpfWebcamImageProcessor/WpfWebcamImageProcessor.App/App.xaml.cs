@@ -22,8 +22,8 @@ namespace WpfWebcamImageProcessor.App
         {
             containerRegistry.RegisterSingleton<IImageProcessingService, ImageProcessingService>();
             containerRegistry.RegisterSingleton<ICameraService, CameraService>();
+            containerRegistry.RegisterSingleton<IHistogramService, HistogramService>();
             containerRegistry.Register<IImageProcessingWorkflowService, ImageProcessingWorkflowService>();
-
         }
 
         /// <summary>
