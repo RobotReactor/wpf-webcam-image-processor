@@ -25,7 +25,7 @@ namespace WpfWebcamImageProcessor.App.Services
             Bitmap? grayscaleBitmap = null; 
 
             try
-            {
+            { 
                 // --- Step 1: Capture Image ---
                 Console.WriteLine("WorkflowService: Attempting to capture image...");
                 capturedBitmap = await _cameraService.CaptureImageAsync();
