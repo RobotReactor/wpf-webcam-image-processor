@@ -1,4 +1,4 @@
-﻿using OxyPlot; // Required for PlotModel
+﻿using OxyPlot;
 
 namespace WpfWebcamImageProcessor.App.Services
 {

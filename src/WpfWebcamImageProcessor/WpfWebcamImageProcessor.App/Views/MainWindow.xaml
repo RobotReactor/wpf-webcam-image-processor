@@ -27,13 +27,22 @@
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
 
-        <Button Grid.Row="0" Content="Capture and Process Image"
-                HorizontalAlignment="Center" VerticalAlignment="Top" Padding="10,5"
-                Command="{Binding ProcessImageCommand}" />
+        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="1" Orientation="Horizontal"
+                    HorizontalAlignment="Center" Margin="0,0,0,10">
+            <Button Content="Capture and Process Image"
+                    Padding="10,5"
+                    Command="{Binding ProcessImageCommand}" />
+            <Button Content="Start Live View"
+                    Padding="10,5" Margin="5"
+                    Command="{Binding StartLiveViewCommand}" />
+            <Button Content="Stop Live View"
+                    Padding="10,5" Margin="5"
+                    Command="{Binding StopLiveViewCommand}" />
+        </StackPanel>
 
         <Border Grid.Row="1" Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Margin="5">
             <Image x:Name="ProcessedImageDisplay" Stretch="Uniform"
-                    Source="{Binding DisplayMat, Converter={StaticResource MatConverter}}"/>
+                   Source="{Binding DisplayMat, Converter={StaticResource MatConverter}}"/>
         </Border>
 
         <oxy:PlotView Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" Margin="5" MinWidth="300"
