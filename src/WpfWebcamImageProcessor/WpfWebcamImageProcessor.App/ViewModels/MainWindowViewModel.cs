@@ -208,7 +208,7 @@ namespace WpfWebcamImageProcessor.App.ViewModels
         /// Asynchronously executes the single-frame capture and processing workflow
         /// when the ProcessImageCommand is invoked.
         /// </summary>
-        private async Task ExecuteProcessImageAsync()
+        internal async Task ExecuteProcessImageAsync()
         {
             if (!CanExecuteProcessImage()) return; // Prevent concurrent execution
 
