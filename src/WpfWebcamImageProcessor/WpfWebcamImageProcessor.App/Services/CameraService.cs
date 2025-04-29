@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics; // Provides Debug.WriteLine
+using System.Diagnostics;
 using System.Drawing;
-using System.Threading; // Provides CancellationTokenSource, Thread
-using System.Threading.Tasks; // Provides Task
-using Emgu.CV; // Provides Mat, VideoCapture
-using Emgu.CV.CvEnum; // Provides VideoCaptureAPIs
-using System.Runtime.Versioning; // Provides SupportedOSPlatform attribute
+using System.Threading;
+using System.Threading.Tasks;
+using Emgu.CV; 
+using Emgu.CV.CvEnum;
+using System.Runtime.Versioning;
 
 namespace WpfWebcamImageProcessor.App.Services
 {
